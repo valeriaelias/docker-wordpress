@@ -1,0 +1,55 @@
+version: "3.6"
+
+services:
+  db:
+    image: mariadb
+    container_name: projectname_db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=wp_projectname
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./wp-data:/var/lib/mysql
+
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:php7.3-fpm-alpine
+    container_name: projectname_wp
+    restart: unless-stopped
+    environment:
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=root
+      - WORDPRESS_DB_NAME=wp_projectname
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=db:3306
+    links:
+      - db
+    volumes:
+      - ./wp-app:/var/www/html
+      - ./server-conf/php:/usr/local/etc/php/conf.d/
+
+  nginx:
+    image: nginx
+    links:
+      - wordpress
+    container_name: projectname_nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./wp-app:/var/www/html
+      - ./logs/nginx:/var/log/nginx
+      - ./server-conf/nginx:/etc/nginx/conf.d
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: projectname_phpmyadmin
+    ports:
+      - 8080:80
+    links:
+      - db
